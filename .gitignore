@@ -1,0 +1,8 @@
+terraform-provider-cloudzero
+dist/
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.log
+test/e2e-aws-account/.terraform*
+test/e2e-aws-account/terraform.tfstate*
