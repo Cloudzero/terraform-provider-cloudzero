@@ -66,6 +66,7 @@ func (p *CloudZeroProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 			},
 			"test_key": schema.StringAttribute{
 				Optional:    true,
+				Sensitive:   true,
 				Description: "If set, all API mutations are scoped to this test namespace " +
 					"and expire after 1 hour. May also be set via the CLOUDZERO_TEST_KEY " +
 					"environment variable. Used for acceptance testing.",

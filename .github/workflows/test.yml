@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,7 +46,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+      - run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.24.0
       - run: tfplugindocs generate --provider-dir . --provider-name cloudzero
       - name: Verify no generated changes
         run: |
