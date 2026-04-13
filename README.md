@@ -162,4 +162,12 @@ Then `go install .` and run `terraform plan` against your configs (skip `terrafo
 
 ## License
 
-BSD 3-Clause License. See [LICENSE](LICENSE).
+This project is licensed under the Apache License, Version 2.0 — see the
+[LICENSE](./LICENSE) file for details.
+
+## Trademarks
+
+"CloudZero" and the CloudZero logo are trademarks of CloudZero, Inc. Use of
+these trademarks is limited to identification and attribution as required by
+the Apache License. You may not use CloudZero trademarks in a way that
+suggests endorsement or affiliation without written permission.

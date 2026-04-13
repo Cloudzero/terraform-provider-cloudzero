@@ -4,5 +4,6 @@ dist/
 *.tfstate
 *.tfstate.backup
 *.log
+.env
 test/e2e-aws-account/.terraform*
 test/e2e-aws-account/terraform.tfstate*
