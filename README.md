@@ -101,15 +101,21 @@ resource "cloudzero_insight" "rds_optimization" {
 ### Connect an AWS Account
 
 ```hcl
+module "cloudzero" {
+  source = "github.com/Cloudzero/provision-account//terraform/cloudzero-aws"
+
+  external_id = var.cloudzero_external_id
+}
+
 resource "cloudzero_aws_account" "production" {
-  cloud_account_id = "123456789012"
+  cloud_account_id = module.cloudzero.account_id
   external_id      = var.cloudzero_external_id
-  role_arn         = aws_iam_role.cloudzero.arn
+  role_arn         = module.cloudzero.role_arn
   account_name     = "production"
 }
 ```
 
-The `cloudzero_aws_account` resource registers an AWS account with CloudZero after the cross-account IAM role has been created. Use it with the [cloudzero-aws Terraform module](https://github.com/Cloudzero/provision-account/tree/develop/terraform/cloudzero-aws) for the complete onboarding experience.
+The `cloudzero_aws_account` resource registers an AWS account with CloudZero after the cross-account IAM role has been created. Use it with the [`cloudzero-aws` module](https://github.com/Cloudzero/provision-account/tree/master/terraform/cloudzero-aws) for the complete onboarding experience — the module creates the IAM role, policies, and optionally the CUR, while this resource handles the registration.
 
 ## Resources
 

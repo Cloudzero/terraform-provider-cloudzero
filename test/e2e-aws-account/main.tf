@@ -4,8 +4,9 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 5.0"
     }
-    cloudzero = {
-      source = "cloudzero/cloudzero"
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.0"
     }
   }
 }
@@ -21,47 +22,32 @@ variable "external_id" {
   sensitive = true
 }
 
-data "aws_caller_identity" "current" {}
+# Create IAM role + policies using the cloudzero-aws module
+module "cloudzero" {
+  source = "github.com/Cloudzero/provision-account//terraform/cloudzero-aws"
 
-# IAM role for CloudZero cross-account access
-resource "aws_iam_role" "cloudzero" {
-  name = "cloudzero-access"
-  path = "/"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Action    = "sts:AssumeRole"
-        Principal = { AWS = "arn:aws:iam::061190967865:root" }
-        Condition = {
-          StringEquals = { "sts:ExternalId" = var.external_id }
-        }
-      }
-    ]
-  })
+  external_id = var.external_id
 
   tags = {
     ManagedBy = "terraform"
-    Purpose   = "cloudzero-provider-test"
+    Purpose   = "cloudzero-provider-e2e-test"
   }
 }
 
-# Register with CloudZero
+# Register the account with CloudZero
 resource "cloudzero_aws_account" "this" {
-  cloud_account_id = data.aws_caller_identity.current.account_id
+  cloud_account_id = module.cloudzero.account_id
   external_id      = var.external_id
-  role_arn         = aws_iam_role.cloudzero.arn
+  role_arn         = module.cloudzero.role_arn
   account_name     = "terraform-provider-e2e-test"
 }
 
 output "role_arn" {
-  value = aws_iam_role.cloudzero.arn
+  value = module.cloudzero.role_arn
 }
 
 output "account_id" {
-  value = data.aws_caller_identity.current.account_id
+  value = module.cloudzero.account_id
 }
 
 output "transaction_id" {
