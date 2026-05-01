@@ -87,8 +87,15 @@ func validateHost(host string) (string, error) {
 		return "", fmt.Errorf("must be a valid URL (e.g. https://api.cloudzero.com), got: %q", host)
 	}
 	isLocalhost := u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1"
-	if !(u.Scheme == "https" || (u.Scheme == "http" && isLocalhost)) {
-		return "", fmt.Errorf("must use https:// (http:// is only allowed for localhost); got scheme %q", u.Scheme)
+	switch u.Scheme {
+	case "https":
+		// valid
+	case "http":
+		if !isLocalhost {
+			return "", fmt.Errorf("must use https:// (http:// is only allowed for localhost); got host %q", u.Host)
+		}
+	default:
+		return "", fmt.Errorf("must use https:// (got scheme %q)", u.Scheme)
 	}
 	if u.Path != "" && u.Path != "/" {
 		return "", fmt.Errorf("must not include a path — use only the scheme and hostname (e.g. https://api.cloudzero.com), got path %q", u.Path)
