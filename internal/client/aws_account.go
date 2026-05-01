@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -86,9 +87,9 @@ func (c *Client) RegisterAWSAccount(ctx context.Context, req AWSAccountLinkReque
 			return &resp, nil
 		}
 
-		// Retry on AssumeRole errors (IAM propagation delay)
+		// Retry on AssumeRole/AccessDenied errors (IAM propagation delay after role creation)
 		errMsg := err.Error()
-		if attempt < maxAttempts && (contains(errMsg, "AssumeRole") || contains(errMsg, "AccessDenied")) {
+		if attempt < maxAttempts && (strings.Contains(errMsg, "AssumeRole") || strings.Contains(errMsg, "AccessDenied")) {
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
@@ -103,15 +104,3 @@ func (c *Client) RegisterAWSAccount(ctx context.Context, req AWSAccountLinkReque
 	return nil, fmt.Errorf("max registration attempts exceeded")
 }
 
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && searchString(s, substr)
-}
-
-func searchString(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
