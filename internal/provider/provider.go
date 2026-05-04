@@ -5,7 +5,10 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -75,6 +78,34 @@ func (p *CloudZeroProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	}
 }
 
+// validateHost parses and normalises the provider host value.
+// It requires https:// (http:// is only allowed for localhost to support local testing).
+// Any path or query component is rejected to prevent accidental credential exfiltration.
+func validateHost(host string) (string, error) {
+	u, err := url.Parse(host)
+	if err != nil || u.Host == "" {
+		return "", fmt.Errorf("must be a valid URL (e.g. https://api.cloudzero.com), got: %q", host)
+	}
+	isLocalhost := u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1"
+	switch u.Scheme {
+	case "https":
+		// valid
+	case "http":
+		if !isLocalhost {
+			return "", fmt.Errorf("must use https:// (http:// is only allowed for localhost); got host %q", u.Host)
+		}
+	default:
+		return "", fmt.Errorf("must use https:// (got scheme %q)", u.Scheme)
+	}
+	if u.Path != "" && u.Path != "/" {
+		return "", fmt.Errorf("must not include a path — use only the scheme and hostname (e.g. https://api.cloudzero.com), got path %q", u.Path)
+	}
+	if u.RawQuery != "" {
+		return "", fmt.Errorf("must not include a query string, got: %q", u.RawQuery)
+	}
+	return strings.TrimRight(u.Scheme+"://"+u.Host, "/"), nil
+}
+
 func (p *CloudZeroProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config CloudZeroProviderModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
@@ -119,6 +150,12 @@ func (p *CloudZeroProvider) Configure(ctx context.Context, req provider.Configur
 
 	if host == "" {
 		host = "https://api.cloudzero.com"
+	}
+
+	host, err := validateHost(host)
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(path.Root("host"), "Invalid CloudZero API Host", err.Error())
+		return
 	}
 
 	c := client.New(host, apiKey, testKey, p.version)

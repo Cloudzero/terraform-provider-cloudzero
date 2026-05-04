@@ -307,11 +307,10 @@ func (r *AWSAccountResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	tflog.Warn(ctx, "CloudZero does not currently support programmatic account deregistration. "+
-		"The account connection will remain in CloudZero. Remove it manually from the CloudZero UI "+
-		"at Organization > Connected Accounts if needed.", map[string]interface{}{
-		"cloud_account_id": state.CloudAccountID.ValueString(),
-	})
-
-	// State is automatically removed by Terraform on successful Delete
+	resp.Diagnostics.AddWarning(
+		"Account deregistration not supported",
+		"CloudZero does not currently support programmatic account deregistration. "+
+			"The account connection for "+state.CloudAccountID.ValueString()+" will remain active in CloudZero. "+
+			"Remove it manually at Organization > Connected Accounts in the CloudZero UI if needed.",
+	)
 }
