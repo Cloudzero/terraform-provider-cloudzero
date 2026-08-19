@@ -290,13 +290,16 @@ func (r *AWSAccountResource) Update(ctx context.Context, req resource.UpdateRequ
 		},
 	}
 
-	_, err := r.client.RegisterAWSAccount(ctx, apiReq)
+	result, err := r.client.RegisterAWSAccount(ctx, apiReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating AWS account registration", err.Error())
 		return
 	}
 
 	plan.ID = plan.CloudAccountID
+	if result != nil {
+		plan.TransactionID = types.StringValue(result.TransactionID)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
