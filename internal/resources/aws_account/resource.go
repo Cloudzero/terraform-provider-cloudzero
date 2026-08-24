@@ -196,11 +196,13 @@ func (r *AWSAccountResource) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("Error registering AWS account with CloudZero", err.Error())
 		return
 	}
+	if result == nil {
+		resp.Diagnostics.AddError("Error registering AWS account with CloudZero", "CloudZero returned an empty registration response")
+		return
+	}
 
 	plan.ID = plan.CloudAccountID
-	if result != nil {
-		plan.TransactionID = types.StringValue(result.TransactionID)
-	}
+	plan.TransactionID = types.StringValue(result.TransactionID)
 
 	tflog.Info(ctx, "Registered AWS account with CloudZero", map[string]interface{}{
 		"cloud_account_id": plan.CloudAccountID.ValueString(),
@@ -290,13 +292,24 @@ func (r *AWSAccountResource) Update(ctx context.Context, req resource.UpdateRequ
 		},
 	}
 
-	_, err := r.client.RegisterAWSAccount(ctx, apiReq)
+	result, err := r.client.RegisterAWSAccount(ctx, apiReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error updating AWS account registration", err.Error())
 		return
 	}
+	if result == nil {
+		resp.Diagnostics.AddError("Error updating AWS account registration", "CloudZero returned an empty registration response")
+		return
+	}
 
 	plan.ID = plan.CloudAccountID
+	plan.TransactionID = types.StringValue(result.TransactionID)
+
+	tflog.Info(ctx, "Updated AWS account registration with CloudZero", map[string]interface{}{
+		"cloud_account_id": plan.CloudAccountID.ValueString(),
+		"transaction_id":   plan.TransactionID.ValueString(),
+	})
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
