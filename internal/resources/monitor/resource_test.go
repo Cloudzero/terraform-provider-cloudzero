@@ -48,6 +48,14 @@ func TestAccMonitorResource_basic(t *testing.T) {
 				),
 			},
 			{
+				Config:           testAccMonitorExplicitEmptyConfig(rName),
+				ConfigPlanChecks: noChanges,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResource, "filter.%", "0"),
+					resource.TestCheckResourceAttr(testResource, "group_by.#", "0"),
+				),
+			},
+			{
 				Config:           testAccMonitorFullConfig(rName),
 				ConfigPlanChecks: noChanges,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -120,6 +128,17 @@ func testAccMonitorMinimalConfig(name string) string {
 resource "cloudzero_monitor" "test" {
   name      = %q
   cost_type = "ON_DEMAND_COST"
+}
+`, name)
+}
+
+func testAccMonitorExplicitEmptyConfig(name string) string {
+	return fmt.Sprintf(`
+resource "cloudzero_monitor" "test" {
+  name      = %q
+  cost_type = "ON_DEMAND_COST"
+  filter    = {}
+  group_by  = []
 }
 `, name)
 }

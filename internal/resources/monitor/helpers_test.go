@@ -66,6 +66,26 @@ func TestFlattenMonitor_EmptyDefaultsBecomeNull(t *testing.T) {
 	}
 }
 
+func TestFlattenMonitor_KeepsConfiguredEmptyCollections(t *testing.T) {
+	ctx := context.Background()
+	emptyFilter, _ := types.MapValueFrom(ctx, filterElementType, map[string][]string{})
+	emptyGroupBy, _ := types.ListValueFrom(ctx, types.StringType, []string{})
+	model := MonitorResourceModel{Filter: emptyFilter, GroupBy: emptyGroupBy}
+
+	var diags diag.Diagnostics
+	flattenMonitor(ctx, decodeMonitor(t, minimalMonitorJSON), &model, &diags)
+	if diags.HasError() {
+		t.Fatal(diags)
+	}
+
+	if !model.Filter.Equal(emptyFilter) {
+		t.Errorf("filter = %v, want empty map", model.Filter)
+	}
+	if !model.GroupBy.Equal(emptyGroupBy) {
+		t.Errorf("group_by = %v, want empty list", model.GroupBy)
+	}
+}
+
 func TestFlattenMonitor_PopulatedFields(t *testing.T) {
 	m := decodeMonitor(t, minimalMonitorJSON)
 	m.FilterSet = map[string][]*string{"CZ:Service": {strPtr("AmazonS3"), nil}}

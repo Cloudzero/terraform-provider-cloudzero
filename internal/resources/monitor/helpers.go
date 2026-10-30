@@ -165,7 +165,8 @@ func notificationsEqual(a, b *MonitorNotificationsModel) bool {
 }
 
 // flattenMonitor maps the API's empty defaults ({}, [], an all-null threshold, no channels) to null,
-// matching an omitted attribute or block. Anything else makes Terraform report an inconsistent result.
+// matching an omitted attribute or block. A filter or group_by already set to an empty value in the
+// model (written as {} or [] in config) stays empty. Anything else makes Terraform report an inconsistent result.
 func flattenMonitor(ctx context.Context, m *client.Monitor, model *MonitorResourceModel, diags *diag.Diagnostics) {
 	model.ID = types.StringValue(m.ID)
 	model.Name = types.StringValue(m.Name)
@@ -177,7 +178,9 @@ func flattenMonitor(ctx context.Context, m *client.Monitor, model *MonitorResour
 	model.UpdatedAt = types.StringValue(m.UpdatedAt)
 
 	if len(m.FilterSet) == 0 {
-		model.Filter = types.MapNull(filterElementType)
+		if !known(model.Filter) || len(model.Filter.Elements()) > 0 {
+			model.Filter = types.MapNull(filterElementType)
+		}
 	} else {
 		filter := make(map[string][]types.String, len(m.FilterSet))
 		for k, values := range m.FilterSet {
@@ -193,7 +196,9 @@ func flattenMonitor(ctx context.Context, m *client.Monitor, model *MonitorResour
 	}
 
 	if len(m.GroupBy) == 0 {
-		model.GroupBy = types.ListNull(types.StringType)
+		if !known(model.GroupBy) || len(model.GroupBy.Elements()) > 0 {
+			model.GroupBy = types.ListNull(types.StringType)
+		}
 	} else {
 		v, d := types.ListValueFrom(ctx, types.StringType, m.GroupBy)
 		diags.Append(d...)
