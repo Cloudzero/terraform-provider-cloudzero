@@ -124,6 +124,7 @@ The `cloudzero_aws_account` resource registers an AWS account with CloudZero aft
 | `cloudzero_view` | Manage Views with filters, connections, and anomaly detection |
 | `cloudzero_budget` | Manage Budgets with monthly limits and alert thresholds |
 | `cloudzero_insight` | Manage Insights with status, effort, and cost impact |
+| `cloudzero_monitor` | Manage anomaly monitors with filters, grouping, thresholds, and email/Slack notifications |
 | `cloudzero_aws_account` | Register AWS accounts with CloudZero |
 
 ## Data Sources

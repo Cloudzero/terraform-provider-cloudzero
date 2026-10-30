@@ -136,6 +136,10 @@ func (c *Client) do(ctx context.Context, method, path string, body interface{}, 
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
+			// A timeout may arrive after the server applied the write, so only idempotent requests are resent.
+			if !isIdempotent(method) {
+				return fmt.Errorf("sending request: %w", err)
+			}
 			lastErr = err
 			lastResp = nil
 			continue
