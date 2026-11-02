@@ -67,7 +67,8 @@ func (r *MonitorResource) Metadata(_ context.Context, req resource.MetadataReque
 
 func (r *MonitorResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a CloudZero anomaly monitor. Monitors created by CloudZero (system monitors) cannot be managed with Terraform.",
+		Description: "Manages a CloudZero anomaly monitor. Monitors created by CloudZero (system monitors) cannot be managed with Terraform.\n\n" +
+			"CloudZero rejects a monitor whose filter matches no cost data, and a monitor whose detection settings (filter, grouping, cost type, and threshold) match an existing monitor. To manage an existing monitor, import it.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
