@@ -30,6 +30,12 @@ var costTypes = []string{
 
 var thresholdOperators = []string{"AND", "OR"}
 
+// Write-side bounds the API enforces on threshold settings; outside them create and update return 422.
+const (
+	minPercentage       = 0.01
+	maxThresholdSetting = 1e12
+)
+
 // Same pattern the API enforces: a Slack conversation ID, never a channel name.
 var slackChannelIDPattern = regexp.MustCompile(`^[CG][A-Z0-9]{8,}$`)
 
@@ -87,11 +93,17 @@ func validateThreshold(t *MonitorThresholdModel) diag.Diagnostics {
 			"operator is only allowed when both min_cost_impact and percentage are set.")
 	}
 
-	if hasMin && t.MinCostImpact.ValueFloat64() < 0 {
-		diags.AddAttributeError(p.AtName("min_cost_impact"), "Invalid min_cost_impact", "Must be 0 or greater.")
+	if hasMin {
+		if v := t.MinCostImpact.ValueFloat64(); v < 0 || v > maxThresholdSetting {
+			diags.AddAttributeError(p.AtName("min_cost_impact"), "Invalid min_cost_impact",
+				fmt.Sprintf("Must be between 0 and %.0f.", maxThresholdSetting))
+		}
 	}
-	if hasPct && t.Percentage.ValueFloat64() <= 0 {
-		diags.AddAttributeError(p.AtName("percentage"), "Invalid percentage", "Must be greater than 0.")
+	if hasPct {
+		if v := t.Percentage.ValueFloat64(); v < minPercentage || v > maxThresholdSetting {
+			diags.AddAttributeError(p.AtName("percentage"), "Invalid percentage",
+				fmt.Sprintf("Must be between %g and %.0f.", minPercentage, maxThresholdSetting))
+		}
 	}
 	if hasOp && !slices.Contains(thresholdOperators, t.Operator.ValueString()) {
 		diags.AddAttributeError(p.AtName("operator"), "Invalid operator",

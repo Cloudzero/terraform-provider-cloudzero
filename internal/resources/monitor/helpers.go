@@ -6,6 +6,7 @@ package monitor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -237,6 +238,13 @@ func flattenNotifications(ctx context.Context, channels []client.NotificationCha
 			diags.Append(d...)
 			n.Email = v
 		case channelTypeSlack:
+			// Keeping only one would make the next notifications update delete the others.
+			if len(c.Recipients) > 1 {
+				diags.AddError("Monitor has more than one Slack channel",
+					fmt.Sprintf("cloudzero_monitor supports one Slack channel per monitor, but this monitor notifies %d: %s. "+
+						"Remove all but one in the CloudZero UI, then retry.", len(c.Recipients), strings.Join(c.Recipients, ", ")))
+				continue
+			}
 			n.SlackChannelID = types.StringValue(c.Recipients[0])
 		}
 	}

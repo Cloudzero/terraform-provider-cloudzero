@@ -119,6 +119,21 @@ func TestFlattenMonitor_PopulatedFields(t *testing.T) {
 	}
 }
 
+func TestFlattenMonitor_RejectsMultipleSlackChannels(t *testing.T) {
+	m := decodeMonitor(t, minimalMonitorJSON)
+	m.NotificationChannels = []client.NotificationChannel{
+		{ChannelType: "slack", Recipients: []string{"C0123ABCD9", "C0123ABCD8"}},
+	}
+
+	var model MonitorResourceModel
+	var diags diag.Diagnostics
+	flattenMonitor(context.Background(), m, &model, &diags)
+
+	if !diags.HasError() || !strings.Contains(diags.Errors()[0].Summary(), "more than one Slack channel") {
+		t.Fatalf("want a multiple-Slack-channel error, got %v", diags)
+	}
+}
+
 func TestBuildUpdateRequest_SendsOnlyChangedFields(t *testing.T) {
 	ctx := context.Background()
 	var state MonitorResourceModel
@@ -234,6 +249,12 @@ func TestValidateMonitor(t *testing.T) {
 			m.Threshold = threshold(floatPtr(1), floatPtr(5), strPtr("OR"))
 		}, ""},
 		{"zero percentage", func(m *MonitorResourceModel) { m.Threshold = threshold(nil, floatPtr(0), nil) }, "Invalid percentage"},
+		{"percentage below API minimum", func(m *MonitorResourceModel) { m.Threshold = threshold(nil, floatPtr(0.005), nil) }, "Invalid percentage"},
+		{"percentage at API minimum", func(m *MonitorResourceModel) { m.Threshold = threshold(nil, floatPtr(0.01), nil) }, ""},
+		{"percentage above API maximum", func(m *MonitorResourceModel) { m.Threshold = threshold(nil, floatPtr(1e12+1), nil) }, "Invalid percentage"},
+		{"min_cost_impact at API maximum", func(m *MonitorResourceModel) { m.Threshold = threshold(floatPtr(1e12), nil, nil) }, ""},
+		{"min_cost_impact above API maximum", func(m *MonitorResourceModel) { m.Threshold = threshold(floatPtr(1e12+1), nil, nil) }, "Invalid min_cost_impact"},
+		{"negative min_cost_impact", func(m *MonitorResourceModel) { m.Threshold = threshold(floatPtr(-1), nil, nil) }, "Invalid min_cost_impact"},
 		{"empty notifications", func(m *MonitorResourceModel) {
 			m.Notifications = &MonitorNotificationsModel{Email: types.SetNull(types.StringType), SlackChannelID: types.StringNull()}
 		}, "Empty notifications"},

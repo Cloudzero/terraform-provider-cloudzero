@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -57,6 +58,35 @@ func TestDo_TransportErrorRetriesOnlyIdempotentMethods(t *testing.T) {
 			}
 			if got := hits.Load(); got != tc.want {
 				t.Errorf("requests sent = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDo_DialErrorRetriesEveryMethod(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := ln.Addr().String()
+	_ = ln.Close()
+
+	for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodPatch} {
+		t.Run(method, func(t *testing.T) {
+			var dials atomic.Int32
+			c := testClient("http://" + addr)
+			c.httpClient.Transport = &http.Transport{
+				DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+					dials.Add(1)
+					return (&net.Dialer{}).DialContext(ctx, network, address)
+				},
+			}
+
+			if err := c.do(context.Background(), method, "/v2/monitors", nil, nil); err == nil {
+				t.Fatal("expected an error")
+			}
+			if got := dials.Load(); got != 4 {
+				t.Errorf("connection attempts = %d, want 4", got)
 			}
 		})
 	}
