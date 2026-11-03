@@ -8,9 +8,11 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -58,6 +60,13 @@ func isIdempotent(method string) bool {
 		return true
 	}
 	return false
+}
+
+// isDialError reports whether err happened while connecting (refused, unreachable, DNS failure),
+// before any request bytes were sent, so even a non-idempotent request is safe to resend.
+func isDialError(err error) bool {
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && opErr.Op == "dial"
 }
 
 // retryDelay returns the backoff duration before the next attempt.
@@ -136,6 +145,11 @@ func (c *Client) do(ctx context.Context, method, path string, body interface{}, 
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
+			// A timeout may arrive after the server applied the write, so only idempotent requests are resent,
+			// unless the connection was never established.
+			if !isIdempotent(method) && !isDialError(err) {
+				return fmt.Errorf("sending request: %w", err)
+			}
 			lastErr = err
 			lastResp = nil
 			continue

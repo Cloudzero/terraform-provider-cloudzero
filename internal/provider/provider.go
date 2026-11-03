@@ -21,6 +21,7 @@ import (
 	awsaccountresource "terraform-provider-cloudzero/internal/resources/aws_account"
 	budgetresource "terraform-provider-cloudzero/internal/resources/budget"
 	insightresource "terraform-provider-cloudzero/internal/resources/insight"
+	monitorresource "terraform-provider-cloudzero/internal/resources/monitor"
 	viewresource "terraform-provider-cloudzero/internal/resources/view"
 	budgetsdatasource "terraform-provider-cloudzero/internal/datasources/budgets"
 	viewsdatasource "terraform-provider-cloudzero/internal/datasources/views"
@@ -169,6 +170,7 @@ func (p *CloudZeroProvider) Resources(_ context.Context) []func() resource.Resou
 		viewresource.NewViewResource,
 		budgetresource.NewBudgetResource,
 		insightresource.NewInsightResource,
+		monitorresource.NewMonitorResource,
 	}
 }
 
